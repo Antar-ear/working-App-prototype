@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Translator - Smart Earbuds</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(to bottom, #581c87, #7c3aed);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 428px;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #581c87, #7c3aed);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            min-height: 100vh;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .page.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* Status Bar */
+        .status-bar {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-time {
+            color: white;
+            font-size: 12px;
+        }
+
+        .status-icons {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .battery-icon {
+            width: 16px;
+            height: 12px;
+            border: 1px solid white;
+            border-radius: 2px;
+            padding: 1px;
+        }
+
+        .battery-fill {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 1px;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 24px;
+        }
+
+        .card {
+            background: rgba(147, 51, 234, 0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 32px;
+            width: 100%;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            color: #d8b4fe;
+        }
+
+        h1, h2 {
+            color: white;
+            text-align: center;
+        }
+
+        h1 { font-size: 24px; }
+        h2 { font-size: 20px; }
+
+        .subtitle {
+            color: #d8b4fe;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* QR Code */
+        .qr-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #10b981;
+            color: white;
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .qr-code {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-pattern {
+            width: 180px;
+            height: 180px;
+            background-image: 
+                repeating-linear-gradient(0deg, #000 0px, #000 10px, transparent 10px, transparent 20px),
+                repeating-linear-gradient(90deg, #000 0px, #000 10px, transparent 10px, transparent 20px);
+            opacity: 0.3;
+        }
+
+        /* URL Box */
+        .url-box {
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .url-label {
+            color: #d8b4fe;
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .url-text {
+            color: white;
+            font-size: 14px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            border: none;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #9333ea, #ec4899);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to right, #3b82f6, #9333ea);
+            color: white;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f97316;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        .btn-link {
+            background: transparent;
+            color: #d8b4fe;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .btn-link:hover {
+            color: white;
+            transform: none;
+        }
+
+        /* Participants */
+        .participants-box {
+            background: rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .participants-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .participants-label {
+            color: #d8b4fe;
+            font-size: 14px;
+        }
+
+        .participants-count {
+            color: white;
+            font-weight: bold;
+        }
+
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .participant-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .participant-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .participant-status.host {
+            background: #fbbf24;
+        }
+
+        .participant-name {
+            color: white;
+            font-size: 14px;
+        }
+
+        .participant-language {
+            color: #d8b4fe;
+            font-size: 12px;
+        }
+
+        .host-badge {
+            background: #9333ea;
+            color: #d8b4fe;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #d8b4fe;
+            font-size: 12px;
+        }
+
+        /* Navigation */
+        .nav-header {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            gap: 8px;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .nav-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .nav-action {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Conversation */
+        .conversation-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px;
+        }
+
+        .message-bubble {
+            background: rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .message-speaker {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .message-language {
+            color: #d8b4fe;
+            font-size: 12px;
+        }
+
+        .message-time {
+            color: #d8b4fe;
+            font-size: 11px;
+        }
+
+        .message-original {
+            color: #d8b4fe;
+            font-size: 12px;
+            font-style: italic;
+            margin-bottom: 4px;
+        }
+
+        .message-translated {
+            color: white;
+            font-size: 14px;
+        }
+
+        /* Active Speakers Bar */
+        .speakers-bar {
+            background: rgba(147, 51, 234, 0.3);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 0 16px 12px;
+        }
+
+        .speakers-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .speakers-label {
+            color: #d8b4fe;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .language-selector {
+            background: #9333ea;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .speakers-list {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .speaker-chip {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(147, 51, 234, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #d8b4fe;
+            white-space: nowrap;
+        }
+
+        .speaker-chip.active {
+            background: #10b981;
+            color: white;
+            animation: pulse 1s infinite;
+        }
+
+        /* Chat */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: rgba(147, 51, 234, 0.2);
+            border-radius: 24px 24px 0 0;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(147, 51, 234, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-subtitle {
+            color: #d8b4fe;
+            font-size: 12px;
+        }
+
+        .chat-hint {
+            background: rgba(147, 51, 234, 0.3);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .chat-hint-main {
+            color: #d8b4fe;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .chat-hint-sub {
+            color: #a78bfa;
+            font-size: 12px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-message {
+            max-width: 85%;
+            padding: 12px;
+            border-radius: 16px;
+            word-wrap: break-word;
+        }
+
+        .chat-message.user {
+            align-self: flex-end;
+            background: #9333ea;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-message.bot {
+            align-self: flex-start;
+            background: rgba(147, 51, 234, 0.5);
+            color: white;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-container {
+            padding: 16px;
+            background: rgba(147, 51, 234, 0.3);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(147, 51, 234, 0.3);
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 24px;
+            outline: none;
+        }
+
+        .chat-input::placeholder {
+            color: #a78bfa;
+        }
+
+        .chat-send {
+            background: #9333ea;
+            border: none;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #7c3aed;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 350px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            color: white;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: start;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .summary-bullet {
+            color: #10b981;
+            margin-top: 2px;
+        }
+
+        .summary-text {
+            font-size: 14px;
+        }
+
+        .action-controls {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- QR Connect Page -->
+        <div id="qrconnect-page" class="page active">
+            <div class="status-bar">
+                <div class="status-time">2:29</div>
+                <div class="status-icons">
+                    <span>LTE</span>
+                    <div class="battery-icon">
+                        <div class="battery-fill"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <div class="card-header">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                        </svg>
+                        <h2>Universal Translator</h2>
+                    </div>
+                    <p class="subtitle">Anyone can scan to join - speak any language, understand everyone</p>
+                    
+                    <div class="qr-container">
+                        <div class="live-badge">
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8.7 15.9L4.8 12l-1.4 1.4L8.7 19.3 20.3 7.7 18.9 6.3z"></path>
+                            </svg>
+                            LIVE
+                        </div>
+                        <div class="qr-code">
+                            <div class="qr-pattern"></div>
+                        </div>
+                    </div>
+
+                    <div class="url-box">
+                        <div class="url-label">Quick Join URL</div>
+                        <div class="url-text">https://antar.link/s/CUCUGHG40</div>
+                    </div>
+
+                    <button class="btn btn-link" onclick="copyURL()">
+                        <span id="copy-text">📋 Share Link</span>
+                    </button>
+
+                    <button class="btn btn-primary" onclick="connectDevice()">
+                        Start Session
+                    </button>
+
+                    <div style="margin-top: 16px; text-align: center;">
+                        <p style="color: #d8b4fe; font-size: 12px;">No app needed for participants</p>
+                        <p style="color: #a78bfa; font-size: 12px;">Works with any device • Unlimited participants</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connected Page -->
+        <div id="connected-page" class="page">
+            <div class="status-bar">
+                <div class="status-time">2:29</div>
+                <div class="status-icons">
+                    <span>LTE</span>
+                    <div class="battery-icon">
+                        <div class="battery-fill"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="content">
+                <div class="card">
+                    <h2 style="margin-bottom: 8px;">Session Active</h2>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;">
+                        <div style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite;"></div>
+                        <span style="color: #10b981; font-size: 14px;">Broadcasting</span>
+                    </div>
+
+                    <div class="participants-box">
+                        <div class="participants-header">
+                            <span class="participants-label">Participants</span>
+                            <span class="participants-count" id="participant-count">1/∞</span>
+                        </div>
+                        <div id="participants-list">
+                            <div class="participant-item">
+                                <div class="participant-info">
+                                    <div class="participant-status host"></div>
+                                    <span class="participant-name">You</span>
+                                    <span class="host-badge">Host</span>
+                                </div>
+                                <span class="participant-language">English</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto 4px; color: #d8b4fe;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 0112.728 0"></path>
+                            </svg>
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">Languages</div>
+                        </div>
+                        <div class="stat-box">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin: 0 auto 4px; color: #d8b4fe;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                            <div class="stat-value" id="connected-count">1</div>
+                            <div class="stat-label">Connected</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(147, 51, 234, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center;">
+                        <p style="color: #d8b4fe; font-size: 12px; margin-bottom: 4px;">Session Code</p>
+                        <p style="color: white; font-family: monospace; font-size: 18px;">YY36EQK2Z</p>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="startTranslating()" style="margin-bottom: 12px;">
+                        💬 Start Translating
+                    </button>
+
+                    <button class="btn btn-primary" onclick="openSmartFeatures()">
+                        🤖 Smart Features
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Translation Page -->
+        <div id="translate-page" class="page">
+            <div class="nav-header">
+                <button class="back-btn" onclick="goBack()">‹</button>
+                <div class="nav-title">Multi-Language Session</div>
+                <button class="nav-action" onclick="toggleChat()">Smart AI</button>
+            </div>
+
+            <div class="speakers-bar">
+                <div class="speakers-header">
+                    <div class="speakers-label">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        Active Participants
+                    </div>
+                    <button class="language-selector" onclick="showLanguageModal()">My Language: English</button>
+                </div>
+                <div class="speakers-list" id="speakers-list">
+                    <div class="speaker-chip">You (English)</div>
+                    <div class="speaker-chip">Rahul (Hindi)</div>
+                    <div class="speaker-chip">Marie (French)</div>
+                    <div class="speaker-chip">Yuki (Japanese)</div>
+                </div>
+            </div>
+
+            <div class="conversation-container" id="conversation">
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <div>
+                            <span class="message-speaker">Rahul Sharma</span>
+                            <span class="message-language">(Hindi)</span>
+                        </div>
+                        <span class="message-time">2:29 PM</span>
+                    </div>
+                    <div class="message-original">Original: मैं राहुल शर्मा हूं, और आज हम नई सौर ऊर्जा परियोजना के बारे में चर्चा करेंगे।</div>
+                    <div class="message-translated">Translation: I am Rahul Sharma, and today we will discuss about the new solar energy project.</div>
+                </div>
+
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <div>
+                            <span class="message-speaker">Marie Dubois</span>
+                            <span class="message-language">(French)</span>
+                        </div>
+                        <span class="message-time">2:30 PM</span>
+                    </div>
+                    <div class="message-original">Original: Bonjour, je suis Marie de l'équipe technique. Le budget est-il confirmé?</div>
+                    <div class="message-translated">Translation: Hello, I'm Marie from the technical team. Is the budget confirmed?</div>
+                </div>
+
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <div>
+                            <span class="message-speaker">You</span>
+                            <span class="message-language">(English)</span>
+                        </div>
+                        <span class="message-time">2:30 PM</span>
+                    </div>
+                    <div class="message-translated">🌐 Yes, we have 50 crore rupees approved for the entire project.</div>
+                </div>
+
+                <div class="message-bubble">
+                    <div class="message-header">
+                        <div>
+                            <span class="message-speaker">Yuki Tanaka</span>
+                            <span class="message-language">(Japanese)</span>
+                        </div>
+                        <span class="message-time">2:31 PM</span>
+                    </div>
+                    <div class="message-original">Original: プロジェクトの期限はいつですか？私たちのチームは準備ができています。</div>
+                    <div class="message-translated">Translation: What is the project deadline? Our team is ready.</div>
+                </div>
+            </div>
+
+            <div class="action-controls">
+                <div class="action-row">
+                    <button class="btn btn-success btn-small" onclick="showSummary('points')">📝 Summary</button>
+                    <button class="btn btn-warning btn-small" onclick="showSummary('tasks')">✅ Action Items</button>
+                </div>
+                <button id="listen-btn" class="btn btn-secondary" onclick="toggleListening()">
+                    🎤 Start Listening
+                </button>
+            </div>
+
+            <!-- Chat Interface -->
+            <div id="chat-interface" class="chat-container" style="display: none;">
+                <div class="chat-header">
+                    <button class="back-btn" onclick="toggleChat()" style="background: none; padding: 0;">‹</button>
+                    <div>
+                        <div class="chat-title">Smart AI Assistant</div>
+                    </div>
+                    <div class="chat-subtitle">4 languages</div>
+                </div>
+
+                <div class="chat-hint">
+                    <div class="chat-hint-main">Ask about any participant or topic</div>
+                    <div class="chat-hint-sub">"Who's speaking?" • "What did Marie say?" • "Summary in English"</div>
+                </div>
+
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message bot">
+                        Hello! I'm monitoring this multi-language conversation. I can help you understand what everyone is saying, regardless of their language. Ask me about any participant, topic, or get summaries!
+                    </div>
+                </div>
+
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Ask about participants or conversation..." onkeypress="handleChatKeyPress(event)">
+                    <button class="chat-send" onclick="sendMessage()">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals -->
+        <div id="summary-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title" id="modal-title">Summary Points</div>
+                    <button class="modal-close" onclick="closeSummary()">×</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <!-- Content will be inserted here -->
+                </div>
+                <button class="btn btn-primary" onclick="closeSummary()" style="margin-top: 16px;">Done</button>
+            </div>
+        </div>
+
+        <div id="language-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Select Your Language</div>
+                    <button class="modal-close" onclick="closeLanguageModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <button class="btn btn-primary" onclick="selectLanguage('English')">English</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Hindi')">Hindi</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('French')">French</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Spanish')">Spanish</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('German')">German</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Japanese')">Japanese</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Chinese')">Chinese</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Arabic')">Arabic</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Portuguese')">Portuguese</button>
+                        <button class="btn btn-primary" onclick="selectLanguage('Russian')">Russian</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentPage = 'qrconnect';
+        let participantCount = 1;
+        let isListening = false;
+        let selectedLanguage = 'English';
+        let chatVisible = false;
+
+        const participants = [
+            { name: 'You', language: 'English', host: true },
+            { name: 'Rahul Sharma', language: 'Hindi' },
+            { name: 'Marie Dubois', language: 'French' },
+            { name: 'Yuki Tanaka', language: 'Japanese' }
+        ];
+
+        const summaryData = {
+            points: [
+                'Solar panel installation across 5 sites',
+                'International team collaboration confirmed',
+                'Budget of 50 crore rupees approved',
+                'Technology transfer from Japanese partners',
+                'French team handling technical implementation',
+                'Timeline set for Q2 2025 completion',
+                'Environmental clearances obtained',
+                'Expected ROI within 4 years'
+            ],
+            tasks: [
+                'Rahul to finalize vendor contracts by next week',
+                'Marie to review technical specifications',
+                'Yuki to coordinate engineering resources',
+                'Schedule follow-up meeting for all time zones',
+                'Prepare multilingual documentation',
+                'Site inspection scheduled for Monday',
+                'Submit progress report to board',
+                'Arrange safety training for field staff'
+            ]
+        };
+
+        // Page navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId + '-page').classList.add('active');
+            currentPage = pageId;
+        }
+
+        function connectDevice() {
+            showPage('connected');
+            simulateParticipantsJoining();
+        }
+
+        function startTranslating() {
+            showPage('translate');
+            simulateSpeakers();
+        }
+
+        function goBack() {
+            if (chatVisible) {
+                toggleChat();
+            } else {
+                showPage('connected');
+            }
+        }
+
+        function openSmartFeatures() {
+            showPage('translate');
+            setTimeout(() => toggleChat(), 100);
+        }
+
+        // Simulate participants joining
+        function simulateParticipantsJoining() {
+            setTimeout(() => addParticipant(2), 1000);
+            setTimeout(() => addParticipant(3), 2500);
+            setTimeout(() => addParticipant(4), 4000);
+        }
+
+        function addParticipant(index) {
+            if (index <= participants.length) {
+                participantCount = index;
+                updateParticipantsList();
+                document.getElementById('participant-count').textContent = participantCount + '/∞';
+                document.getElementById('connected-count').textContent = participantCount;
+            }
+        }
+
+        function updateParticipantsList() {
+            const list = document.getElementById('participants-list');
+            list.innerHTML = '';
+            
+            for (let i = 0; i < participantCount; i++) {
+                const participant = participants[i];
+                const item = document.createElement('div');
+                item.className = 'participant-item';
+                item.innerHTML = `
+                    <div class="participant-info">
+                        <div class="participant-status ${participant.host ? 'host' : ''}"></div>
+                        <span class="participant-name">${participant.name}</span>
+                        ${participant.host ? '<span class="host-badge">Host</span>' : ''}
+                    </div>
+                    <span class="participant-language">${participant.language}</span>
+                `;
+                list.appendChild(item);
+            }
+        }
+
+        // Simulate active speakers
+        function simulateSpeakers() {
+            if (!isListening) return;
+            
+            const speakers = document.querySelectorAll('.speaker-chip');
+            speakers.forEach(s => s.classList.remove('active'));
+            
+            const randomSpeaker = Math.floor(Math.random() * speakers.length);
+            speakers[randomSpeaker].classList.add('active');
+            
+            setTimeout(() => simulateSpeakers(), 3000);
+        }
+
+        // Toggle listening
+        function toggleListening() {
+            isListening = !isListening;
+            const btn = document.getElementById('listen-btn');
+            
+            if (isListening) {
+                btn.className = 'btn btn-danger';
+                btn.innerHTML = '🔴 Stop Session';
+                simulateSpeakers();
+                addNewMessage();
+            } else {
+                btn.className = 'btn btn-secondary';
+                btn.innerHTML = '🎤 Start Listening';
+                document.querySelectorAll('.speaker-chip').forEach(s => s.classList.remove('active'));
+            }
+        }
+
+        function addNewMessage() {
+            if (!isListening) return;
+            
+            const conversation = document.getElementById('conversation');
+            const newMessage = document.createElement('div');
+            newMessage.className = 'message-bubble';
+            newMessage.style.animation = 'slideUp 0.3s ease-out';
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            newMessage.innerHTML = `
+                <div class="message-header">
+                    <div>
+                        <span class="message-speaker">Rahul Sharma</span>
+                        <span class="message-language">(Hindi)</span>
+                    </div>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-original">Original: हमें अगले सप्ताह तक सभी अनुमोदन चाहिए।</div>
+                <div class="message-translated">Translation: We need all approvals by next week.</div>
+            `;
+            
+            conversation.appendChild(newMessage);
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+
+        // Copy URL
+        function copyURL() {
+            navigator.clipboard.writeText('https://antar.link/s/CUCUGHG40');
+            const copyText = document.getElementById('copy-text');
+            copyText.innerHTML = '✅ Copied!';
+            setTimeout(() => {
+                copyText.innerHTML = '📋 Share Link';
+            }, 2000);
+        }
+
+        // Summary modal
+        function showSummary(type) {
+            const modal = document.getElementById('summary-modal');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+            
+            title.textContent = type === 'points' ? 'Summary Points' : 'Action Items';
+            
+            body.innerHTML = '';
+            const items = summaryData[type];
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'summary-item';
+                div.innerHTML = `
+                    <span class="summary-bullet">${type === 'points' ? '•' : '☐'}</span>
+                    <span class="summary-text">${item}</span>
+                `;
+                body.appendChild(div);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        function closeSummary() {
+            document.getElementById('summary-modal').classList.remove('active');
+        }
+
+        // Language modal
+        function showLanguageModal() {
+            document.getElementById('language-modal').classList.add('active');
+        }
+
+        function closeLanguageModal() {
+            document.getElementById('language-modal').classList.remove('active');
+        }
+
+        function selectLanguage(language) {
+            selectedLanguage = language;
+            document.querySelector('.language-selector').textContent = 'My Language: ' + language;
+            closeLanguageModal();
+        }
+
+        // Chat functionality
+        function toggleChat() {
+            const chatInterface = document.getElementById('chat-interface');
+            const conversation = document.getElementById('conversation');
+            const actionControls = document.querySelector('.action-controls');
+            
+            chatVisible = !chatVisible;
+            
+            if (chatVisible) {
+                chatInterface.style.display = 'flex';
+                conversation.style.display = 'none';
+                actionControls.style.display = 'none';
+            } else {
+                chatInterface.style.display = 'none';
+                conversation.style.display = 'block';
+                actionControls.style.display = 'flex';
+            }
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const messagesContainer = document.getElementById('chat-messages');
+            
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'chat-message user';
+            userMessage.textContent = message;
+            messagesContainer.appendChild(userMessage);
+            
+            input.value = '';
+            
+            // Generate bot response
+            setTimeout(() => {
+                const botMessage = document.createElement('div');
+                botMessage.className = 'chat-message bot';
+                botMessage.textContent = getBotResponse(message.toLowerCase());
+                messagesContainer.appendChild(botMessage);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 800);
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function getBotResponse(message) {
+            if (message.includes('who') && (message.includes('speaking') || message.includes('participants'))) {
+                return 'There are 4 participants: You (English), Rahul Sharma (Hindi - Project Manager), Marie Dubois (French - Technical Lead), and Yuki Tanaka (Japanese - Engineering Director). Everyone speaks in their native language and hears in their preferred language.';
+            } else if (message.includes('rahul') || message.includes('his name')) {
+                return 'Rahul Sharma is the Project Manager speaking in Hindi. He introduced the solar energy project with a 50 crore rupee budget and mentioned needing approvals by next week.';
+            } else if (message.includes('marie') || message.includes('french')) {
+                return 'Marie Dubois from the technical team is participating from France. She asked about budget confirmation and will handle technical implementation.';
+            } else if (message.includes('yuki') || message.includes('japanese')) {
+                return 'Yuki Tanaka is the Engineering Director from Japan. He asked about deadlines and confirmed his team is ready.';
+            } else if (message.includes('budget')) {
+                return 'The project budget is 50 crore rupees, confirmed by all participants.';
+            } else if (message.includes('how') && message.includes('work')) {
+                return 'Everyone scanned your QR code, selected their language, and now speaks naturally. The system translates everything in real-time so everyone understands perfectly!';
+            } else if (message.includes('summary')) {
+                return 'Meeting Summary: 4-way conversation (Hindi, French, Japanese, English) about a ₹50 crore solar project. Timeline: Q2 2025. All teams ready. Key: Everyone communicated in native languages with perfect understanding!';
+            } else {
+                return "I'm tracking this multi-language conversation. Ask me about specific participants, the budget, timeline, or how the translation system works!";
+            }
+        }
+    </script>
+</body>
+</html>
